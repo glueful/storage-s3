@@ -24,6 +24,8 @@ Add a disk under `config/storage.php`:
     'secret' => env('AWS_SECRET_ACCESS_KEY'),
     'prefix' => env('AWS_PREFIX', ''),
     'cdn_base_url' => env('AWS_CDN_BASE_URL'),
+    'signed_ttl' => (int) env('AWS_SIGNED_URL_TTL', 3600),
+    'max_signed_ttl' => (int) env('AWS_MAX_SIGNED_URL_TTL', 86400),
 ],
 ```
 
@@ -41,6 +43,8 @@ Presets fill endpoint, region, and path-style defaults. They are still `driver =
     'bucket' => env('R2_BUCKET'),
     'key' => env('R2_ACCESS_KEY_ID'),
     'secret' => env('R2_SECRET_ACCESS_KEY'),
+    'signed_ttl' => (int) env('R2_SIGNED_URL_TTL', 3600),
+    'max_signed_ttl' => (int) env('R2_MAX_SIGNED_URL_TTL', 86400),
 ],
 ```
 
@@ -54,8 +58,13 @@ Presets fill endpoint, region, and path-style defaults. They are still `driver =
     'bucket' => env('MINIO_BUCKET'),
     'key' => env('MINIO_ACCESS_KEY'),
     'secret' => env('MINIO_SECRET_KEY'),
+    'signed_ttl' => (int) env('MINIO_SIGNED_URL_TTL', 3600),
+    'max_signed_ttl' => (int) env('MINIO_MAX_SIGNED_URL_TTL', 86400),
 ],
 ```
+
+The default MinIO endpoint is for local development. Remote or production MinIO
+deployments should use an HTTPS endpoint.
 
 ### DigitalOcean Spaces
 
@@ -67,6 +76,8 @@ Presets fill endpoint, region, and path-style defaults. They are still `driver =
     'bucket' => env('SPACES_BUCKET'),
     'key' => env('SPACES_ACCESS_KEY_ID'),
     'secret' => env('SPACES_SECRET_ACCESS_KEY'),
+    'signed_ttl' => (int) env('SPACES_SIGNED_URL_TTL', 3600),
+    'max_signed_ttl' => (int) env('SPACES_MAX_SIGNED_URL_TTL', 86400),
 ],
 ```
 
@@ -80,6 +91,8 @@ Presets fill endpoint, region, and path-style defaults. They are still `driver =
     'bucket' => env('WASABI_BUCKET'),
     'key' => env('WASABI_ACCESS_KEY_ID'),
     'secret' => env('WASABI_SECRET_ACCESS_KEY'),
+    'signed_ttl' => (int) env('WASABI_SIGNED_URL_TTL', 3600),
+    'max_signed_ttl' => (int) env('WASABI_MAX_SIGNED_URL_TTL', 86400),
 ],
 ```
 
@@ -103,6 +116,8 @@ The framework always supports app-signed blob URLs through `/blobs/{uuid}`. Dire
 ```
 
 Private native URLs are bearer tokens from the object provider. Keep them short-lived and prefer the app-signed URL when application-side authorization or revocation matters.
+Direct provider URL TTLs are clamped by the disk's `max_signed_ttl` value, which
+defaults to 86400 seconds.
 
 ## Diagnostics
 

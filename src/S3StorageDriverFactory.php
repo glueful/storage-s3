@@ -129,7 +129,7 @@ class S3StorageDriverFactory implements
 
             $clientClass = 'Aws\\S3\\S3Client';
             $client = new $clientClass($clientConfig);
-            $seconds = $ttl > 0 ? $ttl : (int) ($cfg['signed_ttl'] ?? 3600);
+            $seconds = $this->signedUrlTtl($ttl, $cfg);
             $prefix = (string) ($cfg['prefix'] ?? '');
             $key = $prefix !== ''
                 ? rtrim($prefix, '/') . '/' . ltrim($path, '/')
@@ -141,6 +141,17 @@ class S3StorageDriverFactory implements
         } catch (\Throwable) {
             return null;
         }
+    }
+
+    /**
+     * @param array<string, mixed> $config
+     */
+    private function signedUrlTtl(int $ttl, array $config): int
+    {
+        $seconds = $ttl > 0 ? $ttl : (int) ($config['signed_ttl'] ?? 3600);
+        $max = (int) ($config['max_signed_ttl'] ?? 86400);
+
+        return max(1, min($seconds, max(1, $max)));
     }
 
     /**
@@ -179,17 +190,32 @@ class S3StorageDriverFactory implements
         } catch (\Throwable $e) {
             return [
                 'ok' => false,
-                'message' => "Disk '{$disk}': probe failed -- " . $this->summarizeProviderError($e),
+                'message' => "Disk '{$disk}': probe failed -- " . $this->summarizeProviderError($e, $diskConfig),
             ];
         }
     }
 
-    protected function summarizeProviderError(\Throwable $e): string
+    /**
+     * @param array<string, mixed> $config
+     */
+    protected function summarizeProviderError(\Throwable $e, array $config = []): string
     {
         $message = trim($e->getMessage());
         if ($message === '') {
             return $e::class;
         }
+
+        foreach (['key', 'secret', 'endpoint'] as $key) {
+            if (isset($config[$key]) && is_scalar($config[$key]) && (string) $config[$key] !== '') {
+                $message = str_replace((string) $config[$key], '[redacted]', $message);
+            }
+        }
+
+        $message = preg_replace(
+            '/(X-Amz-(?:Credential|Signature|Security-Token)=)[^&\\s]+/i',
+            '$1[redacted]',
+            $message
+        ) ?? $message;
 
         $maxLength = 140;
         if (strlen($message) <= $maxLength) {

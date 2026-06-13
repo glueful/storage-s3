@@ -38,6 +38,39 @@ final class S3NativeSignedUrlTest extends TestCase
         self::assertStringContainsString('tenant-a/uploads/file.jpg', urldecode($url));
     }
 
+    public function testTemporaryUrlClampsTtlToConfiguredMaximum(): void
+    {
+        $url = (new S3StorageDriverFactory())->temporaryUrl('uploads/file.jpg', 999999, [
+            'bucket' => 'my-bucket',
+            'region' => 'us-east-1',
+            'key' => 'AKIA_TEST',
+            'secret' => 'secret_test',
+            'max_signed_ttl' => 900,
+        ]);
+
+        self::assertIsString($url);
+        parse_str((string) parse_url($url, PHP_URL_QUERY), $query);
+
+        self::assertSame('900', $query['X-Amz-Expires'] ?? null);
+    }
+
+    public function testTemporaryUrlClampsConfiguredDefaultTtlToMaximum(): void
+    {
+        $url = (new S3StorageDriverFactory())->temporaryUrl('uploads/file.jpg', 0, [
+            'bucket' => 'my-bucket',
+            'region' => 'us-east-1',
+            'key' => 'AKIA_TEST',
+            'secret' => 'secret_test',
+            'signed_ttl' => 999999,
+            'max_signed_ttl' => 900,
+        ]);
+
+        self::assertIsString($url);
+        parse_str((string) parse_url($url, PHP_URL_QUERY), $query);
+
+        self::assertSame('900', $query['X-Amz-Expires'] ?? null);
+    }
+
     public function testTemporaryUrlReturnsNullWhenBucketMissing(): void
     {
         self::assertNull((new S3StorageDriverFactory())->temporaryUrl('x', 600, ['region' => 'us-east-1']));

@@ -33,6 +33,35 @@ final class S3HealthCheckTest extends TestCase
         self::assertStringNotContainsString('SUPERSECRETVALUE', $result['message']);
     }
 
+    public function testCheckRedactsConfiguredCredentialValuesFromProviderFailureMessage(): void
+    {
+        $factory = new class extends S3StorageDriverFactory {
+            public function create(array $config): \League\Flysystem\FilesystemOperator
+            {
+                throw new \RuntimeException(sprintf(
+                    'AWSAccessKeyId=%s secret=%s endpoint=%s',
+                    (string) $config['key'],
+                    (string) $config['secret'],
+                    (string) $config['endpoint']
+                ));
+            }
+        };
+
+        $result = $factory->check('media', [
+            'bucket' => 'b',
+            'region' => 'us-east-1',
+            'endpoint' => 'http://minio.internal:9000',
+            'key' => 'AKIA_PROVIDER_FAILURE',
+            'secret' => 'PROVIDER_FAILURE_SECRET',
+        ]);
+
+        self::assertFalse($result['ok']);
+        self::assertStringNotContainsString('AKIA_PROVIDER_FAILURE', $result['message']);
+        self::assertStringNotContainsString('PROVIDER_FAILURE_SECRET', $result['message']);
+        self::assertStringNotContainsString('http://minio.internal:9000', $result['message']);
+        self::assertStringContainsString('[redacted]', $result['message']);
+    }
+
     public function testCheckTruncatesProviderFailureMessage(): void
     {
         $factory = new class extends S3StorageDriverFactory {
