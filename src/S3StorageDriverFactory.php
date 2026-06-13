@@ -179,17 +179,32 @@ class S3StorageDriverFactory implements
         } catch (\Throwable $e) {
             return [
                 'ok' => false,
-                'message' => "Disk '{$disk}': probe failed -- " . $this->summarizeProviderError($e),
+                'message' => "Disk '{$disk}': probe failed -- " . $this->summarizeProviderError($e, $diskConfig),
             ];
         }
     }
 
-    protected function summarizeProviderError(\Throwable $e): string
+    /**
+     * @param array<string, mixed> $config
+     */
+    protected function summarizeProviderError(\Throwable $e, array $config = []): string
     {
         $message = trim($e->getMessage());
         if ($message === '') {
             return $e::class;
         }
+
+        foreach (['key', 'secret', 'endpoint'] as $key) {
+            if (isset($config[$key]) && is_scalar($config[$key]) && (string) $config[$key] !== '') {
+                $message = str_replace((string) $config[$key], '[redacted]', $message);
+            }
+        }
+
+        $message = preg_replace(
+            '/(X-Amz-(?:Credential|Signature|Security-Token)=)[^&\\s]+/i',
+            '$1[redacted]',
+            $message
+        ) ?? $message;
 
         $maxLength = 140;
         if (strlen($message) <= $maxLength) {
