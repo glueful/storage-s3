@@ -9,6 +9,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 
+- Clamp native S3 signed URL TTLs with `max_signed_ttl` so direct provider URLs cannot be minted with unbounded lifetimes.
 - Redact S3 health-check provider errors so configured access keys, secrets, endpoints, and signed query material are not surfaced through diagnostics.
 
 ## [1.0.0] - 2026-06-10 -- Initial Storage Provider Pack Release

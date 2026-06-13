@@ -129,7 +129,7 @@ class S3StorageDriverFactory implements
 
             $clientClass = 'Aws\\S3\\S3Client';
             $client = new $clientClass($clientConfig);
-            $seconds = $ttl > 0 ? $ttl : (int) ($cfg['signed_ttl'] ?? 3600);
+            $seconds = $this->signedUrlTtl($ttl, $cfg);
             $prefix = (string) ($cfg['prefix'] ?? '');
             $key = $prefix !== ''
                 ? rtrim($prefix, '/') . '/' . ltrim($path, '/')
@@ -141,6 +141,17 @@ class S3StorageDriverFactory implements
         } catch (\Throwable) {
             return null;
         }
+    }
+
+    /**
+     * @param array<string, mixed> $config
+     */
+    private function signedUrlTtl(int $ttl, array $config): int
+    {
+        $seconds = $ttl > 0 ? $ttl : (int) ($config['signed_ttl'] ?? 3600);
+        $max = (int) ($config['max_signed_ttl'] ?? 86400);
+
+        return max(1, min($seconds, max(1, $max)));
     }
 
     /**
