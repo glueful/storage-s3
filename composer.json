@@ -53,7 +53,7 @@
             "name": "StorageS3",
             "displayName": "S3 Storage Driver",
             "description": "AWS S3 and S3-compatible storage driver (R2/MinIO/Spaces/Wasabi presets).",
-            "version": "1.0.1",
+            "version": "1.1.0",
             "categories": [
                 "storage"
             ],
